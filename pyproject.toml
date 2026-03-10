@@ -1,0 +1,20 @@
+[project]
+name = "mentor-ai"
+version = "0.1.0"
+description = "AI Personal Learning Mentor"
+dependencies = [
+    "streamlit",
+    "crewai",
+    "sqlalchemy",
+    "pydantic",
+    "python-dotenv",
+    "youtube-search-python",
+    "passlib[bcrypt]",
+    "youtube-transcript-api",
+    "gitpython",
+    "litellm",
+    "yt-dlp",
+]
+
+[tool.setuptools]
+packages = ["backend", "database", "app", "config", "tests"]
