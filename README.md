@@ -34,7 +34,7 @@ Welcome to the **AI Personal Learning Mentor**, a sophisticated platform designe
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/priyanshuarora595/mentor-ai.git
    cd mentor-ai
    ```
 
