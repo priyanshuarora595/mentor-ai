@@ -60,10 +60,22 @@ Welcome to the **AI Personal Learning Mentor**, a sophisticated platform designe
 
 ### 4. Running the Application
 
+#### Local Execution
 Start the Streamlit app:
 ```bash
 streamlit run app/streamlit_app.py
 ```
+
+#### Docker Execution (Recommended)
+1. **Prepare Host Ollama** (Mac/Windows):
+   - Ensure Ollama is installed and running on your host machine.
+   - Run `ollama pull llama3` on your host.
+   - Allow connections from Docker: `launchctl setenv OLLAMA_HOST "0.0.0.0"` (on Mac) and restart Ollama.
+2. Build and start the container:
+   ```bash
+   ./run.sh
+   ```
+3. Access the app at `http://localhost:8501`.
 
 ## ⚙️ Usage Tips
 
