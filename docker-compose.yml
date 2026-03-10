@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./mentor.db:/app/mentor.db
+    env_file:
+      - .env
+    environment:
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DATABASE_PATH=mentor.db
+    restart: unless-stopped
+
+volumes:
+  mentor_data:

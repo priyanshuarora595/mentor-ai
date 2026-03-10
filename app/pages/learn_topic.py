@@ -2,6 +2,7 @@ import streamlit as st
 
 from backend.crew import MentorCrew
 from backend.services.profile_service import load_profile
+from backend.llm.ollama_provider import ModelNotFoundError
 
 st.title("📚 Learn New Topic")
 
@@ -90,6 +91,11 @@ if st.button("Generate Learning Plan"):
                 st.session_state["last_learning_plan"] = result
                 st.session_state["current_topic"] = topic
 
+            except ModelNotFoundError as e:
+                st.error(f"🤖 Ollama Error: {str(e)}")
+                st.info(
+                    "💡 Tip: Make sure Ollama is running on your Mac and you have run 'ollama pull llama3'."
+                )
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
     else:
