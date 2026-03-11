@@ -25,37 +25,29 @@ if st.button("Generate Learning Plan"):
         with st.status(f"Generating learning plan for '{topic}'...") as status:
             try:
                 # Callback to update UI during agent execution
-                def crew_step_callback(step):
+                def crew_task_callback(task):
                     # Try multiple ways to get agent role robustly
-                    agent_role = "Agent"
+                    agent = "Agent"
 
-                    # 1. Try from step object (CrewAI AgentAction/AgentFinish/TaskOutput)
-                    if hasattr(step, "agent"):
-                        if isinstance(step.agent, str):
-                            agent_role = step.agent
-                        elif hasattr(step.agent, "role"):
-                            agent_role = step.agent.role
-                    # 2. Try if step is a dict
-                    elif isinstance(step, dict):
-                        agent_role = (
-                            step.get("agent_role") or step.get("agent_name") or "Agent"
-                        )
-                    # 3. Fallback: Parse from log if it looks like "[Role] is thinking..."
-                    elif hasattr(step, "log") and "Working on" in str(step.log):
-                        import re
-
-                        match = re.search(r"Working on (.*?)'s", str(step.log))
-                        if match:
-                            agent_role = match.group(1)
+                    # 1. Try from task object (CrewAI AgentAction/AgentFinish/TaskOutput)
+                    if hasattr(task, "agent"):
+                        if isinstance(task.agent, str):
+                            agent = task.agent
+                        elif hasattr(task.agent, "role"):
+                            agent = task.agent.role
+                    # 2. Try if task is a dict
+                    elif isinstance(task, dict):
+                        agent = task.get("agent") or "Agent"
 
                     # Update status with the dynamic role
-                    status.update(label=f"⏳ {agent_role} is working...")
-                    st.write(f"📝 {agent_role} is processing a step...")
+                    status.update(label=f"⏳ {agent} completed, next starting ...")
+                    st.write(f"📝 {agent} completed processing the task...")
 
                 # Pass the model config and callback
                 crew = MentorCrew(topic, llm_config=llm_config)
-                result = crew.run(step_callback=crew_step_callback)
+                status.update(label="Curriculum Planner is generating...")
 
+                result = crew.run(task_callback=crew_task_callback)
                 status.update(label="✨ Learning plan generated!", state="complete")
 
                 # Save to database

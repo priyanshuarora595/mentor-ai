@@ -11,7 +11,7 @@ class MentorCrew:
         self.llm = LLMFactory.get_llm(llm_config)
         self.learning_agents = LearningAgents(self.llm)
 
-    def run(self, step_callback=None):
+    def run(self, task_callback=None):
         # Create tasks and pass our agents instance
         tasks = create_learning_tasks(self.topic, self.learning_agents)
 
@@ -26,7 +26,7 @@ class MentorCrew:
             tasks=tasks,
             process=Process.sequential,
             verbose=True,
-            step_callback=step_callback,
+            task_callback=task_callback,
         )
 
         return crew.kickoff()
