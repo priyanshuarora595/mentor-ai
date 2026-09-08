@@ -64,9 +64,3 @@ class LearningAgents:
             backstory="You are a supportive but rigorous academic advisor. You help students identify their weak spots and suggest what they should focus on next.",
         )
 
-    def content_aggregator(self):
-        return self._get_agent(
-            role="Learning Content Integrator",
-            goal="Compile all parts of the learning material (roadmap, explanations, videos) into a single, cohesive, and beautiful markdown document.",
-            backstory="You are a senior editor with an eye for flow and structure. Your job is to make sure the final learning platform feels unified and complete. CRITICAL: You MUST include EVERY section provided by the other agents (Roadmap, Explanations, and YouTube Videos). Never skip or summarize these sections. Merged them into one masterpiece. START your response directly with the content. do NOT repeat your role, system instructions, or any 'Final Answer' markers.",
-        )
