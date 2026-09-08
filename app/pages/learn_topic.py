@@ -1,4 +1,7 @@
+import threading
+
 import streamlit as st
+from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 from backend.crew import MentorCrew
 from backend.services.profile_service import load_profile
@@ -23,24 +26,43 @@ if st.button("Generate Learning Plan"):
     if topic:
         with st.status(f"Generating learning plan for '{topic}'...") as status:
             try:
-                # Callback to update UI during agent execution
+                # Some tasks now run concurrently (async_execution=True in
+                # learning_tasks.py) on crewai-managed background threads, which
+                # don't carry Streamlit's script context by default — calling
+                # st.* from them raises. Capture this thread's context up front
+                # and attach it to whichever thread invokes the callback below.
+                # A lock serializes the actual UI writes, since two async tasks
+                # can complete around the same moment and both invoke this.
+                main_ctx = get_script_run_ctx()
+                ui_lock = threading.Lock()
+
                 def crew_task_callback(task):
-                    # Try multiple ways to get agent role robustly
-                    agent = "Agent"
+                    # This callback is purely cosmetic status feedback — crewai
+                    # calls it with no try/except of its own, so any exception
+                    # here (thread-context issues included) would otherwise
+                    # fail the real task even though the agent already
+                    # succeeded. Nothing below may escape this function.
+                    try:
+                        add_script_run_ctx(threading.current_thread(), main_ctx)
 
-                    # 1. Try from task object (CrewAI AgentAction/AgentFinish/TaskOutput)
-                    if hasattr(task, "agent"):
-                        if isinstance(task.agent, str):
-                            agent = task.agent
-                        elif hasattr(task.agent, "role"):
-                            agent = task.agent.role
-                    # 2. Try if task is a dict
-                    elif isinstance(task, dict):
-                        agent = task.get("agent") or "Agent"
+                        # Try multiple ways to get agent role robustly
+                        agent = "Agent"
 
-                    # Update status with the dynamic role
-                    status.update(label=f"⏳ {agent} completed, next starting ...")
-                    st.write(f"📝 {agent} completed processing the task...")
+                        # 1. Try from task object (CrewAI AgentAction/AgentFinish/TaskOutput)
+                        if hasattr(task, "agent"):
+                            if isinstance(task.agent, str):
+                                agent = task.agent
+                            elif hasattr(task.agent, "role"):
+                                agent = task.agent.role
+                        # 2. Try if task is a dict
+                        elif isinstance(task, dict):
+                            agent = task.get("agent") or "Agent"
+
+                        with ui_lock:
+                            status.update(label=f"⏳ {agent} completed, next starting ...")
+                            st.write(f"📝 {agent} completed processing the task...")
+                    except Exception:
+                        pass
 
                 # Pass the model config and callback
                 crew = MentorCrew(topic, llm_config=llm_config)
@@ -49,29 +71,13 @@ if st.button("Generate Learning Plan"):
                 result = crew.run(task_callback=crew_task_callback)
                 status.update(label="✨ Learning plan generated!", state="complete")
 
-                # Save to database
+                # Save to database — crew.run() already returns clean, assembled
+                # markdown (sanitized per-section in MentorCrew), no further
+                # post-processing needed here.
                 from backend.services.learning_service import LearningService
 
-                # Ensure result is handled as string and sanitize
-                def sanitize_output(text):
-                    import re
-
-                    # Remove common system preambles and "Final Answer" markers
-                    patterns = [
-                        r"(?i)^System:.*?\n",
-                        r"(?i)^You are.*?\n",
-                        r"(?i)^Final Answer:.*?\n",
-                        r"(?i)^---.*?\n",
-                        r"(?i)```\n",
-                    ]
-                    clean_text = str(text)
-                    for pattern in patterns:
-                        clean_text = re.sub(pattern, "", clean_text, count=1).strip()
-                    return clean_text
-
-                content_str = sanitize_output(result)
                 new_topic = LearningService.save_topic(
-                    user_id=1, topic_name=topic, content=content_str
+                    user_id=1, topic_name=topic, content=result
                 )
 
                 st.success("Learning plan generated!")
