@@ -57,13 +57,6 @@ class LearningAgents:
             tools=[YoutubeSearchTool()],
         )
 
-    def github_repo_agent(self):
-        return self._get_agent(
-            role="GitHub Repo Agent",
-            goal="Analyze GitHub repositories to extract learning paths and explain how real-world projects are structured.",
-            backstory="You are a senior software architect who can read any codebase and immediately understand its structure and key patterns.",
-        )
-
     def progress_evaluator(self):
         return self._get_agent(
             role="Progress Evaluator",

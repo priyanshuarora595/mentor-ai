@@ -3,17 +3,19 @@ name = "mentor-ai"
 version = "0.1.0"
 description = "AI Personal Learning Mentor"
 dependencies = [
-    "streamlit",
-    "crewai",
-    "sqlalchemy",
-    "pydantic",
-    "python-dotenv",
-    "youtube-search-python",
-    "passlib[bcrypt]",
-    "youtube-transcript-api",
-    "gitpython",
-    "litellm",
-    "yt-dlp",
+    # crewai/litellm pull in a very large, fast-moving transitive dependency
+    # tree; pinning these exactly keeps `pip install -e .` from backtracking
+    # for many minutes trying to resolve an unconstrained version space.
+    "streamlit==1.55.0",
+    "crewai[anthropic]==1.10.1",
+    "sqlalchemy==2.0.48",
+    "pydantic==2.11.10",
+    "litellm==1.95.1",
+    "yt-dlp==2026.3.3",
+    "python-dotenv>=1.0.0",
+    "youtube-search-python>=1.6.6",
+    "youtube-transcript-api>=0.6.0",
+    "cryptography>=42.0.0",
 ]
 
 [tool.setuptools]

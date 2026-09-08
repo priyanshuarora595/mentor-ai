@@ -14,7 +14,6 @@ try:
 except Exception:
     llm_config = None
 
-print("llm_config", llm_config)
 topic = st.text_input(
     "What do you want to learn today?",
     placeholder="e.g., Python Decorators, Quantum Computing, etc.",

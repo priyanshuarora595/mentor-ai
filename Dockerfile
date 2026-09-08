@@ -20,8 +20,8 @@ RUN pip install --no-cache-dir -e .
 # Expose the port that Streamlit runs on
 EXPOSE 8501
 
-# Define environment variable (can be overridden)
-ENV ENCRYPTION_KEY=default-secret-string
+# ENCRYPTION_KEY must be supplied at runtime (e.g. via --env-file or docker-compose).
+# The app refuses to start without a real, non-default value — see config/settings.py.
 
 # Run streamlit when the container launches
 ENTRYPOINT ["streamlit", "run", "app/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
