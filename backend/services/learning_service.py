@@ -1,3 +1,5 @@
+from sqlalchemy import func
+
 from database.db import engine, SessionLocal
 from database.models import Base, LearningTopic
 
@@ -6,6 +8,31 @@ Base.metadata.create_all(bind=engine)
 
 
 class LearningService:
+    @staticmethod
+    def find_by_topic_name(user_id, topic_name):
+        """Case-insensitive exact match; most recent one if duplicates exist."""
+        db = SessionLocal()
+        try:
+            return (
+                db.query(LearningTopic)
+                .filter(
+                    LearningTopic.user_id == user_id,
+                    func.lower(LearningTopic.topic_name) == topic_name.strip().lower(),
+                )
+                .order_by(LearningTopic.id.desc())
+                .first()
+            )
+        finally:
+            db.close()
+
+    @staticmethod
+    def get_topic_by_id(topic_id):
+        db = SessionLocal()
+        try:
+            return db.query(LearningTopic).filter(LearningTopic.id == topic_id).first()
+        finally:
+            db.close()
+
     @staticmethod
     def save_topic(user_id, topic_name, content):
         db = SessionLocal()

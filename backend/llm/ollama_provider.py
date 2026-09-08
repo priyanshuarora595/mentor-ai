@@ -2,6 +2,8 @@ import os
 import requests
 from crewai import LLM
 
+from backend.llm import OLLAMA_TIMEOUT_SECONDS
+
 
 class ModelNotFoundError(Exception):
     """Exception raised when an Ollama model is not found on the host."""
@@ -46,4 +48,8 @@ class OllamaProvider:
         self.validate_model()
 
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        return LLM(model=f"ollama/{self.model}", base_url=base_url)
+        return LLM(
+            model=f"ollama/{self.model}",
+            base_url=base_url,
+            timeout=OLLAMA_TIMEOUT_SECONDS,
+        )

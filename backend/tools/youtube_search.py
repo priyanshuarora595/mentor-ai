@@ -1,6 +1,15 @@
+import time
 from typing import Any, Type
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
+
+# Network hiccups (DNS blips, transient connection resets) shouldn't cost an
+# agent its entire search after minutes of a crew run — retry a few times
+# with a short backoff before giving up. "No results found" is not retried:
+# that's a legitimate answer, not a failure.
+_MAX_ATTEMPTS = 3
+_SOCKET_TIMEOUT_SECONDS = 15
+_RETRY_BACKOFF_SECONDS = 1.5
 
 
 class YoutubeSearchInput(BaseModel):
@@ -31,37 +40,46 @@ class YoutubeSearchTool(BaseTool):
             "quiet": True,
             "extract_flat": True,
             "force_generic_extractor": True,
+            "socket_timeout": _SOCKET_TIMEOUT_SECONDS,
         }
 
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # Use ytsearch5 prefix as recommended by user
-                search_query = f"ytsearch5:{query}"
-                result = ydl.extract_info(search_query, download=False)
+        last_error: Exception | None = None
+        for attempt in range(_MAX_ATTEMPTS):
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    # Use ytsearch5 prefix as recommended by user
+                    search_query = f"ytsearch5:{query}"
+                    result = ydl.extract_info(search_query, download=False)
 
-                if "entries" not in result or not result["entries"]:
-                    return f"No YouTube videos found for '{topic}'."
+                    if "entries" not in result or not result["entries"]:
+                        return f"No YouTube videos found for '{topic}'."
 
-                videos = []
-                for entry in result["entries"]:
-                    title = entry.get("title", "Unknown Title")
-                    url = entry.get("webpage_url") or entry.get("url")
-                    if not url and entry.get("id"):
-                        url = f"https://www.youtube.com/watch?v={entry['id']}"
+                    videos = []
+                    for entry in result["entries"]:
+                        title = entry.get("title", "Unknown Title")
+                        url = entry.get("webpage_url") or entry.get("url")
+                        if not url and entry.get("id"):
+                            url = f"https://www.youtube.com/watch?v={entry['id']}"
 
-                    if url:
-                        videos.append(f"- {title}: {url}")
+                        if url:
+                            videos.append(f"- {title}: {url}")
 
-                    if len(videos) >= 5:
-                        break
+                        if len(videos) >= 5:
+                            break
 
-                if not videos:
-                    return f"No valid YouTube links found for '{topic}'."
+                    if not videos:
+                        return f"No valid YouTube links found for '{topic}'."
 
-                return f"YouTube Search Results for '{topic}':\n" + "\n".join(videos)
+                    return f"YouTube Search Results for '{topic}':\n" + "\n".join(
+                        videos
+                    )
 
-        except Exception as e:
-            return f"Error searching YouTube with yt-dlp: {str(e)}"
+            except Exception as e:
+                last_error = e
+                if attempt < _MAX_ATTEMPTS - 1:
+                    time.sleep(_RETRY_BACKOFF_SECONDS * (attempt + 1))
+
+        return f"Error searching YouTube with yt-dlp: {str(last_error)}"
 
     def _extract_topic(self, kwargs: Any) -> str:
         """Deeply search for a topic string in the arguments."""
