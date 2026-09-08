@@ -1,4 +1,3 @@
-import os
 from crewai import LLM
 
 
@@ -8,8 +7,6 @@ class OpenRouterProvider:
         self.model = model
 
     def get_llm(self):
-        if self.api_key:
-            os.environ["OPENROUTER_API_KEY"] = self.api_key
         # OpenRouter models require the openrouter/ prefix and explicit base_url
         # to ensure LiteLLM doesn't misroute them (especially free models).
         return LLM(

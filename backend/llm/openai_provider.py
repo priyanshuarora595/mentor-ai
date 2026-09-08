@@ -1,4 +1,3 @@
-import os
 from crewai import LLM
 
 
@@ -8,6 +7,4 @@ class OpenAIProvider:
         self.model = model
 
     def get_llm(self):
-        if self.api_key:
-            os.environ["OPENAI_API_KEY"] = self.api_key
         return LLM(model=f"openai/{self.model}", api_key=self.api_key)

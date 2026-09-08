@@ -8,6 +8,21 @@ class AnthropicProvider:
         self.model = model
 
     def get_llm(self):
-        if self.api_key:
-            os.environ["ANTHROPIC_API_KEY"] = self.api_key
-        return LLM(model=f"anthropic/{self.model}", api_key=self.api_key)
+        if not self.api_key:
+            return LLM(model=f"anthropic/{self.model}", api_key=self.api_key)
+
+        # crewai's native Anthropic client (as of 1.10.1) has a bug where it never
+        # forwards the api_key constructor arg to its base class, so it silently
+        # falls back to reading ANTHROPIC_API_KEY from the environment instead.
+        # The Anthropic SDK client is constructed synchronously inside LLM(...),
+        # so we set the env var only for that call and restore it immediately after,
+        # rather than leaving it mutated for the whole process/session lifetime.
+        previous = os.environ.get("ANTHROPIC_API_KEY")
+        os.environ["ANTHROPIC_API_KEY"] = self.api_key
+        try:
+            return LLM(model=f"anthropic/{self.model}", api_key=self.api_key)
+        finally:
+            if previous is None:
+                os.environ.pop("ANTHROPIC_API_KEY", None)
+            else:
+                os.environ["ANTHROPIC_API_KEY"] = previous
