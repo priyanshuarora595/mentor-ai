@@ -1,5 +1,7 @@
 from crewai import LLM
 
+from backend.llm import DEFAULT_TIMEOUT_SECONDS
+
 
 class OpenRouterProvider:
     def __init__(self, api_key=None, model="google/gemini-2.0-flash-001"):
@@ -13,4 +15,5 @@ class OpenRouterProvider:
             model=f"openrouter/{self.model}",
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1",
+            timeout=DEFAULT_TIMEOUT_SECONDS,
         )
